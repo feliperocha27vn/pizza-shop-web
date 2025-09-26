@@ -23,7 +23,7 @@ import { Textarea } from './ui/textarea'
 
 const storeProfileFormSchema = z.object({
   name: z.string().min(1, 'O nome deve ter no mínimo 1 caracteres'),
-  description: z.string().optional(),
+  description: z.string().nullable(),
 })
 
 type StoreProfileFormSchema = z.infer<typeof storeProfileFormSchema>
@@ -49,22 +49,38 @@ export function StoreProfileDialog() {
     },
   })
 
+  function updateManagedRestaurantCache({
+    name,
+    description,
+  }: StoreProfileFormSchema) {
+    const cached = queryClient.getQueryData<GetManagedRestaurantBody>([
+      'managed-restaurant',
+    ])
+
+    if (cached) {
+      queryClient.setQueryData<GetManagedRestaurantBody>(
+        ['managed-restaurant'],
+        {
+          ...cached,
+          name,
+          description,
+        }
+      )
+    }
+
+    return { cached }
+  }
+
   const { mutateAsync: updateProfileFn } = useMutation({
     mutationFn: updateProfile,
-    onSuccess(_, { name, description }) {
-      const cached = queryClient.getQueryData<GetManagedRestaurantBody>([
-        'managed-restaurant',
-      ])
+    onMutate({ name, description }) {
+      const { cached } = updateManagedRestaurantCache({ name, description })
 
-      if (cached) {
-        queryClient.setQueryData<GetManagedRestaurantBody>(
-          ['managed-restaurant'],
-          {
-            ...cached,
-            name,
-            description,
-          }
-        )
+      return { previousProfile: cached }
+    },
+    onError(_, __, context) {
+      if (context?.previousProfile) {
+        updateManagedRestaurantCache(context.previousProfile)
       }
     },
   })
