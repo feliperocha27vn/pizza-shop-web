@@ -1,10 +1,23 @@
+import { OrderStatus } from '@/components/order-status'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { TableCell, TableRow } from '@/components/ui/table'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { ArrowRight, Search, X } from 'lucide-react'
 import { OrderDetails } from './order-details'
 
-export function OrderTableRow() {
+export interface OrderTableRowPropos {
+  order: {
+    orderId: string
+    createdAt: string
+    status: 'pending' | 'canceled' | 'processing' | 'delivering' | 'delivered'
+    customerName: string
+    total: number
+  }
+}
+
+export function OrderTableRow({ order }: OrderTableRowPropos) {
   return (
     <TableRow>
       <TableCell>
@@ -18,16 +31,25 @@ export function OrderTableRow() {
           <OrderDetails />
         </Dialog>
       </TableCell>
-      <TableCell className="font-mono text-sm font-medium">#123456</TableCell>
-      <TableCell className="text-muted-foreground">há 15 minutos</TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-slate-400"></span>
-          <span className="font-medium text-muted-foreground">Pendente</span>
-        </div>
+      <TableCell className="font-mono text-sm font-medium">
+        #{order.orderId}
       </TableCell>
-      <TableCell className="font-medium">Felipe Rocha</TableCell>
-      <TableCell className="font-medium">R$ 149,90</TableCell>
+      <TableCell className="text-muted-foreground">
+        {formatDistanceToNow(new Date(order.createdAt), {
+          locale: ptBR,
+          addSuffix: true,
+        })}
+      </TableCell>
+      <TableCell>
+        <OrderStatus status={order.status} />
+      </TableCell>
+      <TableCell className="font-medium">{order.customerName}</TableCell>
+      <TableCell className="font-medium">
+        {order.total.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        })}
+      </TableCell>
       <TableCell>
         <Button variant="outline" size={'xs'}>
           <ArrowRight className="size-3" />
